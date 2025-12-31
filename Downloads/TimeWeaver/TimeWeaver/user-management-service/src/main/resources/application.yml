@@ -1,0 +1,39 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: user-management-service
+  datasource:
+    url: jdbc:h2:file:./data/userdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: false
+app:
+  jwt:
+    secret: change-me-in-prod
+    ttlSeconds: 36000  # 10 heures par défaut
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

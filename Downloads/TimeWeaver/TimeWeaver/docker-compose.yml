@@ -1,0 +1,90 @@
+version: '3.9'
+services:
+  eureka:
+    build:
+      context: .
+      dockerfile: ./discovery-service/Dockerfile
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
+    depends_on:
+      - eureka
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_PROFILES_ACTIVE=dev
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  user-management-service:
+    build:
+      context: .
+      dockerfile: ./user-management-service/Dockerfile
+    depends_on:
+      - eureka
+    ports:
+      - "8081:8081"
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:h2:file:./data/userdb;AUTO_SERVER=TRUE
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - APP_JWT_SECRET=dev-shared-secret-change-me
+      - SPRING_PROFILES_ACTIVE=dev
+    volumes:
+      - ./data:/app/data
+
+  ai-prediction-service:
+    build:
+      context: .
+      dockerfile: ./ai-prediction-service/Dockerfile
+    depends_on:
+      - eureka
+    ports:
+      - "8082:8082"
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
+      - APP_JWT_SECRET=dev-shared-secret-change-me
+      - SPRING_PROFILES_ACTIVE=dev
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./notification-service/Dockerfile
+    depends_on:
+      - eureka
+      - rabbitmq
+    ports:
+      - "8083:8083"
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - APP_JWT_SECRET=dev-shared-secret-change-me
+      - SPRING_PROFILES_ACTIVE=dev
+
+  time-tracking-service:
+    build:
+      context: .
+      dockerfile: ./time-tracking-service/Dockerfile
+    depends_on:
+      - eureka
+    ports:
+      - "8084:8084"
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:h2:file:./data/timetrackingdb;AUTO_SERVER=TRUE
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - APP_JWT_SECRET=dev-shared-secret-change-me
+      - SPRING_PROFILES_ACTIVE=dev
+    volumes:
+      - ./data:/app/data

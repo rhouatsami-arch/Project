@@ -1,0 +1,56 @@
+server:
+  port: 8080
+
+spring:
+  security:
+    user:
+      name: user
+      password: password
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      default-filters:
+        - RemoveRequestHeader=Cookie
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:4200"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: time-tracking
+          uri: lb://time-tracking-service
+          predicates:
+            - Path=/api/tasks/**
+        - id: user-management
+          uri: lb://user-management-service
+          predicates:
+            - Path=/api/auth/**, /api/users/**
+        - id: ai-prediction
+          uri: lb://ai-prediction-service
+          predicates:
+            - Path=/api/predict
+    discovery:
+      locator:
+        enabled: true
+        lower-case-service-id: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    org.springframework.web: INFO
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true

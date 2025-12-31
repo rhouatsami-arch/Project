@@ -1,0 +1,6 @@
+#FileLock
+#Wed Dec 24 06:18:05 GMT+01:00 2025
+hostName=192.168.56.1
+id=19b4ecafe49c1d31b5b2037acdefab1400c77c38300
+method=file
+server=192.168.56.1\:50300

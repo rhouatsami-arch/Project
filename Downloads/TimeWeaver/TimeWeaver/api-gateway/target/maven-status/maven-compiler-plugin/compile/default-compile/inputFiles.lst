@@ -1,0 +1,3 @@
+/app/api-gateway/src/main/java/com/timeweaver/apigateway/ApiGatewayApplication.java
+/app/api-gateway/src/main/java/com/timeweaver/apigateway/filters/RequestLoggingFilter.java
+/app/api-gateway/src/main/java/com/timeweaver/apigateway/config/SecurityConfig.java

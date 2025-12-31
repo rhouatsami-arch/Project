@@ -1,0 +1,3 @@
+com/timeweaver/apigateway/config/SecurityConfig.class
+com/timeweaver/apigateway/ApiGatewayApplication.class
+com/timeweaver/apigateway/filters/RequestLoggingFilter.class
