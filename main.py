@@ -1,15 +1,36 @@
-# main.py
-from fastapi import FastAPI
-from app.routers.routers.routers import user
-from app.routers.routers import auth
+class Doc:
+    """Define the documentation of a type annotation using `Annotated`, to be
+        used in class attributes, function and method parameters, return values,
+        and variables.
 
-app = FastAPI()
+    The value should be a positional-only string literal to allow static tools
+    like editors and documentation generators to use it.
 
-# Include routers
-app.include_router(user.router)
-app.include_router(auth.router)
+    This complements docstrings.
 
-@app.get("/")
-def root():
-    return {"message": "Hello World"}
+    The string value passed is available in the attribute `documentation`.
 
+    Example:
+
+    ```Python
+    from typing import Annotated
+    from annotated_doc import Doc
+
+    def hi(name: Annotated[str, Doc("Who to say hi to")]) -> None:
+        print(f"Hi, {name}!")
+    ```
+    """
+
+    def __init__(self, documentation: str, /) -> None:
+        self.documentation = documentation
+
+    def __repr__(self) -> str:
+        return f"Doc({self.documentation!r})"
+
+    def __hash__(self) -> int:
+        return hash(self.documentation)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Doc):
+            return NotImplemented
+        return self.documentation == other.documentation
