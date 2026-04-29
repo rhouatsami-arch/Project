@@ -1,4 +1,6 @@
 import os
+import hashlib
+import base64
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 from dotenv import load_dotenv
@@ -21,12 +23,18 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
+def _prehash(password: str) -> str:
+    """SHA-256 pre-hash keeps input under bcrypt's 72-byte limit."""
+    digest = hashlib.sha256(password.encode()).digest()
+    return base64.b64encode(digest).decode()
+
+
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return pwd_context.hash(_prehash(password))
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return pwd_context.verify(_prehash(plain), hashed)
 
 
 def create_access_token(subject: str, role: Literal["student", "recruiter"]) -> str:
