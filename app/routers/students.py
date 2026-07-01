@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import os
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.student import Student
@@ -47,3 +48,42 @@ def update_my_profile(
 def delete_my_account(current: Student = Depends(get_current_student), db: Session = Depends(get_db)):
     db.delete(current)
     db.commit()
+
+
+@router.post("/me/cv", status_code=status.HTTP_200_OK)
+async def upload_cv(
+    cv: UploadFile = File(...),
+    current: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    # ── Validate extension ──
+    ext = cv.filename.rsplit(".", 1)[-1].lower()
+    if ext not in {"pdf", "doc", "docx"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PDF, DOC, DOCX files are allowed"
+        )
+
+    # ── Validate size (5 MB max) ──
+    contents = await cv.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File too large. Maximum size is 5MB"
+        )
+
+    # ── Save file ──
+    os.makedirs("uploads/cvs", exist_ok=True)
+    filepath = f"uploads/cvs/student_{current.id}_{cv.filename}"
+    with open(filepath, "wb") as f:
+        f.write(contents)
+
+    # ── Persist path in DB ──
+    current.cv_url = filepath
+    db.commit()
+    db.refresh(current)
+
+    return {
+        "message": "CV uploaded successfully",
+        "cv_url": filepath
+    }

@@ -1,4 +1,4 @@
-import os
+﻿import os
 import hashlib
 import base64
 from datetime import datetime, timedelta, timezone
@@ -37,7 +37,7 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(_prehash(plain), hashed)
 
 
-def create_access_token(subject: str, role: Literal["student", "recruiter"]) -> str:
+def create_access_token(subject: str, role: Literal["student", "recruiter", "candidate"]) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     return jwt.encode({"sub": subject, "role": role, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -67,3 +67,15 @@ def get_current_recruiter(token: str = Depends(oauth2_scheme), db: Session = Dep
     if not recruiter:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Recruiter not found")
     return recruiter
+
+
+def get_current_admin(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    from app.models.admin import Admin
+    payload = _decode_token(token)
+    if payload.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not an admin account")
+    if not (admin := db.query(Admin).filter(Admin.email == payload["sub"]).first()):
+        raise HTTPException(status_code=401, detail="Admin not found")
+    if not admin.is_active:
+        raise HTTPException(status_code=403, detail="Admin account disabled")
+    return admin
