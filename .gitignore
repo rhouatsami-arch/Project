@@ -8,3 +8,9 @@ venv/
 dist/
 build/
 .pytest_cache/
+*.db
+uploads/cvs/*.txt
+backend/*.db
+backend/uploads/cvs/*.txt
+frontend/node_modules/
+frontend/dist/
