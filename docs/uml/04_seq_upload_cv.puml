@@ -1,0 +1,40 @@
+@startuml Seq_UploadCV
+' MatiousHire PFE 2026 — Séquence upload CV (UC04)
+' Slide 33
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title Upload CV — POST /students/me/cv
+
+actor "Étudiant /\nCandidat" as User
+participant "Next.js\n(ProfilePanel)" as UI
+participant "FastAPI\n/cv" as API
+participant "CvService" as CV
+participant "storage.py" as ST
+participant "extraction.py\n+ skills.py" as EX
+database "PostgreSQL" as DB
+collections "uploads/cvs/" as FS
+
+User -> UI : Sélectionner fichier PDF/DOCX
+UI -> API : POST /students/me/cv\n(multipart/form-data)
+activate API
+API -> API : Vérifier JWT
+API -> CV : upload(student, filename, bytes)
+activate CV
+CV -> ST : validate_cv_file()\n(max 5 Mo, extensions)
+CV -> ST : save_cv_file(uuid, filename)
+ST -> FS : Écrire {uuid}_{filename}
+CV -> EX : extract_raw_text(filename, bytes)
+EX --> CV : raw_text
+CV -> EX : extract_skills_from_text(raw_text)
+EX --> CV : skills[]
+CV -> DB : UPDATE students SET\n cv_filename, cv_path,\n cv_extracted_text,\n cv_extracted_at,\n technical_skills
+CV --> API : CvUploadResult
+deactivate CV
+API -> API : record_audit(UPLOAD_CV)
+API --> UI : 201 CvUploadOut
+deactivate API
+UI --> User : Confirmation +\ncompétences détectées
+
+@enduml

@@ -1,0 +1,88 @@
+@startuml MatiousHire_Architecture_IA
+' MatiousHire PFE 2026 — Architecture interne module IA
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam componentStyle rectangle
+
+title MatiousHire — Architecture du module IA (matching ML/NLP)
+
+package "Entrées" {
+  component "ApplicantProfile\n(skills, CV, expériences)" as IN_PROF
+  component "JobProfile\n(titre, description, skills)" as IN_JOB
+}
+
+package "Orchestration" #F3E5F5 {
+  component "MatchingPipeline\nrun_traced()" as PIPE {
+    portin profile
+    portin job
+    portout result
+  }
+  component "MatchingService\nrecommend_jobs()\nrank_applications()" as MSVC
+}
+
+package "Scoring" #E1BEE7 {
+  component "scorer.py\ncompute_compatibility_score()" as SCORER
+  component "matching_score_service.py\ncalculate_matching_score()" as MSS
+  component "score_formula.py" as FORM {
+    [compute_skills_score]
+    [compute_experience_score]
+    [compute_semantic_similarity]
+    [compute_education_score]
+    [compute_location_score]
+    [compute_availability_score]
+    [compute_penalties]
+    [classify_score]
+  }
+}
+
+package "NLP / Features" #CE93D8 {
+  component "nlp.py\nTF-IDF · Jaccard · tokens" as NLP
+  component "embeddings.py\nsynonymes compétences" as EMB
+  component "cv/skills.py\ndictionnaire métier" as DICT
+}
+
+package "Explicabilité" #B39DDB {
+  component "llm/explanation.py\nexplain_compatibility()" as EXPL
+  component "llm/service.py\nrésumés · conseils" as LLM
+}
+
+package "Sorties" {
+  component "MatchResult\nscore 0-100\nrank_label\nbreakdown" as OUT
+  component "RecommendationHistory\naudit trail" as HIST
+}
+
+package "API REST" #E8F5E9 {
+  component "/matching/score" as API1
+  component "/matching/.../recommendations" as API2
+  component "/matching/recruiters/.../ranking" as API3
+  component "/llm/explain-job/{id}" as API4
+}
+
+IN_PROF --> SCORER
+IN_JOB --> SCORER
+PIPE --> SCORER
+SCORER --> MSS
+MSS --> FORM
+FORM --> NLP
+FORM --> EMB
+FORM --> DICT
+PIPE --> EXPL
+EXPL --> LLM
+SCORER --> OUT
+MSVC --> PIPE
+MSVC --> HIST
+
+API1 --> PIPE
+API2 --> MSVC
+API3 --> MSVC
+API4 --> LLM
+
+note bottom of FORM
+  **Formule globale**
+  S = 0,35·Comp + 0,25·Exp + 0,20·Sém
+    + 0,10·Form + 0,05·Loc + 0,05·Disp
+  S_final = S × pénalités
+end note
+
+@enduml

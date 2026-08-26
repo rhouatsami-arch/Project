@@ -1,0 +1,29 @@
+
+> recruitment-frontend@1.0.0 build
+> next build
+
+   ▲ Next.js 15.5.22
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 9.3s
+   Linting and checking validity of types ...
+
+./components/auth-experience.tsx
+32:51  Warning: 'Token' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/21) ...
+   Generating static pages (5/21) 
+   Generating static pages (10/21) 
+   Generating static pages (15/21) 
+ ✓ Generating static pages (21/21)
+   Finalizing page optimization ...
+   Collecting build traces ...
+[Error: ENOENT: no such file or directory, open 'c:\Users\hp\MatiousHire1\Project\frontend\.next\server\pages\_error.js.nft.json'] {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'c:\\Users\\hp\\MatiousHire1\\Project\\frontend\\.next\\server\\pages\\_error.js.nft.json'
+}

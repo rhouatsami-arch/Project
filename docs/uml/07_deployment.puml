@@ -1,0 +1,34 @@
+@startuml MatiousHire_Deployment
+' MatiousHire PFE 2026 — Diagramme de déploiement
+' Slide 25
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title MatiousHire — Diagramme de déploiement
+
+node "Poste client" as CLIENT {
+  artifact "Navigateur\nChrome / Edge" as BROWSER
+}
+
+node "Serveur application\n(local / cloud)" as SERVER {
+  component "Next.js 15\n:3000" as NEXT
+  component "FastAPI + uvicorn\n:8000" as FASTAPI
+  NEXT --> FASTAPI : REST API\n(JSON + JWT)
+}
+
+node "Persistance" as STORAGE {
+  database "PostgreSQL\n:5432" as PG
+  storage "Disque local\nuploads/cvs/" as DISK
+}
+
+BROWSER --> NEXT : HTTP
+FASTAPI --> PG : SQLAlchemy\nDATABASE_URL
+FASTAPI --> DISK : Lecture / écriture\nfichiers CV
+
+note right of SERVER
+  Dev : SQLite possible
+  Tests : SQLite in-memory (pytest)
+end note
+
+@enduml

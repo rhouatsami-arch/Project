@@ -1,0 +1,41 @@
+@startuml Activity_Matching
+' MatiousHire PFE 2026 — Diagramme d'activité pipeline IA
+' Slide 20 (alternative)
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title Pipeline ML/NLP — Diagramme d'activité
+
+start
+
+:Collecte profil candidat\n+ offre d'emploi;
+
+:Prétraitement NLP\n(tokenisation, stop-words FR/EN);
+
+:Extraction de features\n(compétences, TF-IDF, synonymes);
+
+partition "Scoring multi-critères" {
+  :S_skills (35%);
+  :S_experience (25%);
+  :S_semantic (20%);
+  :S_education (10%);
+  :S_location (5%);
+  :S_availability (5%);
+  :S_global = fusion pondérée;
+}
+
+if (Pénalités métier?) then (oui)
+  :Appliquer facteur multiplicatif\n(compétence manquante, CV incomplet...);
+else (non)
+endif
+
+:Génération explication LLM\n+ breakdown détaillé;
+
+:Classement décroissant\n+ libellé de rang;
+
+:Score final 0–100\n+ explication;
+
+stop
+
+@enduml

@@ -1,0 +1,117 @@
+@startuml MatiousHire_Architecture_Layers
+' MatiousHire PFE 2026 — Architecture logique 6 couches
+' Figure principale jury — Slide 19
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+skinparam roundcorner 8
+
+title MatiousHire — Architecture logique (6 couches)
+
+skinparam rectangle {
+  BackgroundColor<<presentation>> #E3F2FD
+  BorderColor<<presentation>> #1565C0
+  BackgroundColor<<api>> #E8F5E9
+  BorderColor<<api>> #2E7D32
+  BackgroundColor<<metier>> #FFF3E0
+  BorderColor<<metier>> #EF6C00
+  BackgroundColor<<ia>> #F3E5F5
+  BorderColor<<ia>> #7B1FA2
+  BackgroundColor<<data>> #ECEFF1
+  BorderColor<<data>> #455A64
+  BackgroundColor<<devops>> #FAFAFA
+  BorderColor<<devops>> #9E9E9E
+}
+
+together {
+  package "Couche Présentation" <<presentation>> {
+    rectangle "Next.js 15 (App Router)" as NEXT
+    rectangle "React 19 + CSS custom" as REACT
+    rectangle "Fetch API (lib/api.ts)" as FETCH
+    rectangle "Pages\n/student · /candidate\n/recruiter · /admin" as PAGES
+    NEXT -[hidden]down- REACT
+    REACT -[hidden]down- FETCH
+    FETCH -[hidden]down- PAGES
+  }
+}
+
+together {
+  package "Couche API" <<api>> {
+    rectangle "FastAPI (app/main.py)" as FAST
+    rectangle "Routeurs REST\nauth · jobs · matching\nllm · meetings · admin" as ROUTERS
+    rectangle "JWT + RBAC\n(get_current_*)" as JWT
+    rectangle "Pydantic schemas\nvalidation" as PYD
+    rectangle "Error handlers\ncentralisés" as ERR
+    FAST -[hidden]down- ROUTERS
+    ROUTERS -[hidden]down- JWT
+    JWT -[hidden]down- PYD
+    PYD -[hidden]down- ERR
+  }
+}
+
+together {
+  package "Couche Métier" <<metier>> {
+    rectangle "users/\nprofils CRUD" as USERS
+    rectangle "offers/\nCRUD offres" as OFFERS
+    rectangle "cv/\nupload · extraction" as CV
+    rectangle "platform/\nmeetings · audit" as PLATFORM
+    rectangle "MatchingService\nreco · ranking" as MSVC
+  }
+}
+
+together {
+  package "Couche IA" <<ia>> {
+    rectangle "matching/pipeline.py\n(orchestration 6 étapes)" as PIPE
+    rectangle "score_formula.py\n6 critères + pénalités" as FORM
+    rectangle "nlp.py + embeddings.py\nTF-IDF · synonymes" as NLP
+    rectangle "llm/explanation.py\nIA explicable" as LLM
+    rectangle "cv/skills.py\nextraction compétences" as SKILLS
+    PIPE --> FORM
+    PIPE --> NLP
+    PIPE --> LLM
+    FORM --> SKILLS
+  }
+}
+
+together {
+  package "Couche Données" <<data>> {
+    database "PostgreSQL\n(students, jobs,\napplications, audit_logs,\nrecommendation_history)" as PG
+    folder "uploads/cvs/\n(fichiers PDF/DOCX)" as FS
+    rectangle "SQLAlchemy ORM\n+ Alembic migrations" as ORM
+    ORM --> PG
+  }
+}
+
+package "Couche DevOps (cible)" <<devops>> {
+  rectangle "Docker · CI GitHub Actions\nCloud · pytest (39 tests)" as DEVOPS
+}
+
+PAGES --> ROUTERS : HTTPS\nJSON + JWT
+ROUTERS --> USERS
+ROUTERS --> OFFERS
+ROUTERS --> CV
+ROUTERS --> PLATFORM
+ROUTERS --> PIPE
+ROUTERS --> LLM
+USERS --> ORM
+OFFERS --> ORM
+CV --> ORM
+CV --> FS
+PLATFORM --> ORM
+MSVC --> PIPE
+MSVC --> ORM
+PIPE --> ORM
+DEVOPS ..> FAST : déploiement\n(perspective)
+
+legend right
+  |= Couche |= Rôle |
+  | <#E3F2FD> Présentation | UI multi-rôles |
+  | <#E8F5E9> API | REST + sécurité |
+  | <#FFF3E0> Métier | Logique RH |
+  | <#F3E5F5> IA | Matching ML/NLP |
+  | <#ECEFF1> Données | Persistance |
+  | <#FAFAFA> DevOps | CI/CD (cible) |
+endlegend
+
+@enduml

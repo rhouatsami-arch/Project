@@ -1,0 +1,55 @@
+@startuml MatiousHire_Architecture_Overview
+' MatiousHire PFE 2026 — Vue d'ensemble architecture (figure synthèse jury)
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam linetype ortho
+
+title MatiousHire — Vue d'ensemble architecture système
+
+actor "Étudiant\nCandidat\nRecruteur\nAdmin" as USERS
+
+rectangle "MATIOUSHIRE" #FFFFFF {
+
+  frame "1. Présentation" #E3F2FD {
+    component [Next.js 15\nReact 19] as FE
+  }
+
+  frame "2. API REST" #E8F5E9 {
+    component [FastAPI\nJWT · Pydantic] as API
+  }
+
+  frame "3. Métier" #FFF3E0 {
+    component [Users\nOffers\nCV\nPlatform] as BIZ
+  }
+
+  frame "4. IA" #F3E5F5 {
+    component [Pipeline ML/NLP\n6 critères] as IA
+    component [LLM explicable] as LLM
+  }
+
+  frame "5. Données" #ECEFF1 {
+    database "PostgreSQL" as PG
+    storage "CV files" as FS
+  }
+}
+
+USERS --> FE : HTTPS
+FE --> API : JSON REST
+API --> BIZ
+API --> IA
+BIZ --> PG
+BIZ --> FS
+IA --> PG
+IA --> LLM
+
+note as N1
+  **Stack PFE 2026**
+  Frontend : Next.js · Fetch API
+  Backend : FastAPI · SQLAlchemy
+  IA : TF-IDF · synonymes · score hybride
+  Tests : pytest (39)
+  Org. : Matious Digital × EMSI
+end note
+
+@enduml

@@ -1,0 +1,55 @@
+@startuml MatiousHire_Components
+' MatiousHire PFE 2026 — Diagramme de composants
+' Slide 19 — Architecture 6 couches
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title MatiousHire — Architecture par composants
+
+package "Couche Présentation" {
+  [Next.js 15\nApp Router] as FE
+  [Composants UI\nJobsPanel, ProfilePanel,\nLlmExplanationPanel] as COMP
+  FE --> COMP
+}
+
+package "Couche API" {
+  [Routeurs REST\nauth, jobs, matching,\nllm, meetings, admin] as RT
+  [Auth JWT] as JWT
+  [Error Handlers] as ERR
+  RT --> JWT
+  RT --> ERR
+}
+
+package "Couche Métier" {
+  [users/] as US
+  [offers/] as OF
+  [cv/] as CV
+  [platform/\naudit, meetings] as PL
+}
+
+package "Couche IA" {
+  [matching/\npipeline, scorer,\nscore_formula] as MA
+  [llm/\nexplanation] as LL
+  [nlp + embeddings] as NLP
+  MA --> NLP
+}
+
+database "PostgreSQL" as DB
+folder "uploads/cvs/" as FS
+
+COMP --> RT : HTTPS / JSON
+RT --> US
+RT --> OF
+RT --> CV
+RT --> PL
+RT --> MA
+RT --> LL
+US --> DB
+OF --> DB
+CV --> DB
+CV --> FS
+MA --> DB
+PL --> DB
+
+@enduml

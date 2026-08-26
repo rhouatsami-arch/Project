@@ -1,0 +1,188 @@
+@startuml MatiousHire_Classes_Resume_Presentation
+' MatiousHire PFE 2026 - Diagramme de classes GLOBAL (vue synthese jury)
+' Export PNG 16:9 pour PowerPoint slide 21
+' Detail complet : 02_classes_methods.puml
+
+left to right direction
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam roundcorner 8
+skinparam nodesep 40
+skinparam ranksep 35
+
+title MatiousHire PFE 2026\nDiagramme de classes global — Vue synthese\nMatious Digital × EMSI
+
+' ============================================================
+' COLONNE 1 — DOMAINE METIER (PostgreSQL)
+' ============================================================
+
+package "Domaine metier" #E8F5E9 {
+
+  package "Comptes utilisateurs" {
+    abstract class Applicant <<entity>> {
+      - id : UUID
+      - email : String
+      - technical_skills : Text
+      - cv_extracted_text : Text
+      - account_kind : String
+    }
+    class Student <<entity>>
+    class Candidate <<entity>>
+    class Recruiter <<entity>> {
+      - company_name : String
+    }
+    class Admin <<entity>>
+
+    Applicant <|-- Student
+    Applicant <|-- Candidate
+  }
+
+  package "Recrutement" {
+    class Job <<entity>> {
+      - title : String
+      - required_skills : Text
+      - status : String
+    }
+    class Application <<entity>> {
+      - match_score : Integer
+      - status : String
+    }
+    class SavedJob <<entity>>
+  }
+
+  package "Plateforme" {
+    class Meeting <<entity>>
+    class RecommendationHistory <<entity>> {
+      - compatibility_score : Integer
+      - explanation : Text
+    }
+    class AuditLog <<entity>>
+    class Notification <<entity>>
+  }
+}
+
+' ============================================================
+' COLONNE 2 — SERVICES APPLICATIFS
+' ============================================================
+
+package "Services applicatifs" #FFF3E0 {
+
+  class UserService <<service>> {
+    + updateProfile()
+    + createUser()
+    + deleteUser()
+  }
+
+  class OfferService <<service>> {
+    + listJobs()
+    + createJob()
+    + updateJob()
+  }
+
+  class CvService <<service>> {
+    + upload()
+    + extractText()
+    + delete()
+  }
+
+  class MeetingService <<service>> {
+    + proposeSlot()
+    + schedule()
+    + confirm()
+  }
+
+  class AuditService <<service>> {
+    + log()
+  }
+}
+
+' ============================================================
+' COLONNE 3 — MODULE IA (Matching + LLM)
+' ============================================================
+
+package "Module Intelligence Artificielle" #F3E5F5 {
+
+  class MatchingService <<service>> {
+    + scoreStudentJob()
+    + recommendJobs()
+    + rankApplications()
+  }
+
+  class MatchingPipeline <<service>> {
+    + run()
+    + rankLabel()
+  }
+
+  class ScoreFormula <<utility>> {
+    + computeSkills()
+    + computeSemantic()
+    + computePenalties()
+  }
+
+  class LlmService <<service>> {
+    + analyze()
+    + explainMatch()
+    + summarizeCv()
+  }
+
+  class MatchResult <<DTO>> {
+    - compatibility_score : Integer
+    - rank_label : String
+  }
+}
+
+' ============================================================
+' RELATIONS DOMAINE
+' ============================================================
+
+Recruiter "1" -- "0..*" Job : publie
+Applicant "1" -- "0..*" Application : postule
+Job "1" -- "0..*" Application
+Applicant "1" -- "0..*" SavedJob
+Applicant "1" -- "0..*" RecommendationHistory
+Job "1" -- "0..*" RecommendationHistory
+Application "1" -- "0..1" Meeting
+Recruiter "1" -- "0..*" Meeting
+
+' ============================================================
+' RELATIONS SERVICES -> DOMAINE
+' ============================================================
+
+UserService ..> Applicant
+UserService ..> Recruiter
+UserService ..> Admin
+OfferService ..> Job
+CvService ..> Applicant
+MeetingService ..> Meeting
+MeetingService ..> Application
+AuditService ..> AuditLog
+
+MatchingService ..> Applicant
+MatchingService ..> Job
+MatchingService ..> Application
+MatchingService ..> RecommendationHistory
+MatchingService ..> MatchingPipeline
+MatchingPipeline ..> ScoreFormula
+MatchingPipeline ..> MatchResult
+LlmService ..> MatchingPipeline
+LlmService ..> MatchResult
+
+note bottom of Applicant
+  Implementation PostgreSQL
+  Table students
+  Student / Candidate via account_kind
+end note
+
+legend right
+  entity = Entite persistee
+  service = Service metier FastAPI
+  utility = Formules ML/NLP
+  DTO = Objet de transfert
+  --
+  9 entites · 6 services · Pipeline IA 6 criteres
+endlegend
+
+@enduml

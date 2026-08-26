@@ -1,0 +1,62 @@
+
+> recruitment-frontend@1.0.0 dev
+> next dev --hostname 127.0.0.1
+
+   ▲ Next.js 15.5.22
+   - Local:        http://127.0.0.1:3000
+   - Network:      http://127.0.0.1:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 7.5s
+ ○ Compiling / ...
+ ✓ Compiled / in 9.1s (693 modules)
+ ✓ Compiled in 1910ms (278 modules)
+ GET / 200 in 11105ms
+ ✓ Compiled in 353ms (278 modules)
+ ✓ Compiled in 355ms (278 modules)
+ ✓ Compiled in 241ms (278 modules)
+ ✓ Compiled in 225ms (278 modules)
+ ✓ Compiled in 293ms (278 modules)
+ ✓ Compiled in 196ms (278 modules)
+ ✓ Compiled in 200ms (278 modules)
+ ✓ Compiled in 207ms (278 modules)
+ ✓ Compiled in 194ms (278 modules)
+ ✓ Compiled in 207ms (278 modules)
+ ✓ Compiled in 176ms (278 modules)
+ ✓ Compiled in 190ms (278 modules)
+ ✓ Compiled in 154ms (278 modules)
+ ✓ Compiled in 167ms (278 modules)
+ ✓ Compiled in 154ms (278 modules)
+ ✓ Compiled in 183ms (278 modules)
+ ✓ Compiled in 171ms (278 modules)
+ ✓ Compiled in 198ms (278 modules)
+ GET / 200 in 346ms
+ ✓ Compiled in 237ms (278 modules)
+ ✓ Compiled in 261ms (278 modules)
+ GET / 200 in 264ms
+ ✓ Compiled in 223ms (278 modules)
+ GET / 200 in 428ms
+ ✓ Compiled in 312ms (278 modules)
+ ✓ Compiled in 216ms (278 modules)
+ GET / 200 in 369ms
+ ✓ Compiled in 259ms (278 modules)
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/'
+}
+ ✓ Compiled in 306ms (278 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /login in 11.5s (1044 modules)
+ GET /login 200 in 8007ms
+ GET / 500 in 13226ms
+ GET / 200 in 71ms
+ GET / 200 in 55ms
+ GET / 200 in 58ms
+ GET / 200 in 47ms
+ GET / 200 in 55ms
+ GET / 200 in 56ms
+ GET / 200 in 57ms
+ GET / 200 in 271ms
+ HEAD / 200 in 104ms
+[?25h

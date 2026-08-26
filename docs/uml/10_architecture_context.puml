@@ -1,0 +1,40 @@
+@startuml MatiousHire_Architecture_Context
+' MatiousHire PFE 2026 — Diagramme de contexte système (C4 niveau 1)
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title MatiousHire — Diagramme de contexte
+
+actor "Étudiant" as ET
+actor "Candidat" as CA
+actor "Recruteur" as RE
+actor "Administrateur" as AD
+
+rectangle "MatiousHire\nPlateforme RH intelligente" as SYS #E8F5E9 {
+  rectangle "Frontend\nNext.js :3000" as FE
+  rectangle "Backend\nFastAPI :8000" as BE
+  FE --> BE : REST API
+}
+
+cloud "Matious Digital\n(organisme d'accueil)" as MD {
+  note as NMD
+    Startup AI-first
+    Casablanca, Maroc
+  end note
+}
+
+database "PostgreSQL" as PG
+folder "Stockage CV\nuploads/cvs/" as FS
+
+ET --> FE : Profil · CV ·\nRecommandations IA
+CA --> FE : Profil · CV ·\nMatching · Candidatures
+RE --> FE : Offres · Pipeline\nClassement IA · Entretiens
+AD --> FE : Dashboard ·\nAudit logs · Users
+
+BE --> PG : SQLAlchemy
+BE --> FS : Fichiers CV
+
+MD ..> SYS : Encadrement\nstage PFE 2026
+
+@enduml

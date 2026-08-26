@@ -1,0 +1,283 @@
+@startuml MatiousHire_Classes_Domain
+' MatiousHire PFE 2026 - Diagramme de classes DOMAINE (entites PostgreSQL)
+' Aligne sur app/models/recruitment.py et app/models/platform.py
+' Slide 21 - Export PNG pour jury
+
+top to bottom direction
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+title MatiousHire - Diagramme de classes domaine (detaille)
+
+' ============================================================
+' ENUMERATIONS (app/models/recruitment.py + platform.py)
+' ============================================================
+
+package "Enumerations metier" #F5F5F5 {
+
+  enum JobStatus {
+    open
+    closed
+  }
+
+  enum ApplicationStatus {
+    applied
+    shortlisted
+    interview_invited
+    rejected
+    hired
+  }
+
+  enum InternshipDurationType {
+    observation
+    operational
+    functional
+  }
+
+  enum MeetingStatus {
+    proposed
+    accepted
+    refused
+    completed
+    cancelled
+  }
+
+  enum NotificationType {
+    recommendation
+    interview
+    system
+  }
+
+  enum AccountKind {
+    student
+    candidate
+  }
+}
+
+' ============================================================
+' UTILISATEURS (table students : Student + Candidate)
+' ============================================================
+
+package "Utilisateurs et comptes" #E8F5E9 {
+
+  abstract class Applicant {
+    - id : UUID
+    - email : String
+    - hashed_password : String
+    - first_name : String
+    - last_name : String
+    - phone : String
+    - university : String
+    - field_of_study : String
+    - graduation_year : Integer
+    - bio : Text
+    - skills : Text
+    - technical_skills : Text
+    - soft_skills : Text
+    - experiences : Text
+    - projects : Text
+    - certifications : Text
+    - languages : Text
+    - internship_type : String
+    - internship_duration : String
+    - account_kind : AccountKind
+    - cv_filename : String
+    - cv_path : String
+    - cv_extracted_text : Text
+    - cv_extracted_at : DateTime
+    - created_at : DateTime
+    - updated_at : DateTime
+  }
+
+  class Student {
+  }
+
+  class Candidate {
+  }
+
+  class Recruiter {
+    - id : UUID
+    - email : String
+    - hashed_password : String
+    - first_name : String
+    - last_name : String
+    - company_name : String
+    - phone : String
+    - created_at : DateTime
+    - updated_at : DateTime
+  }
+
+  class Admin {
+    - id : UUID
+    - email : String
+    - hashed_password : String
+    - first_name : String
+    - last_name : String
+    - created_at : DateTime
+  }
+
+  Applicant <|-- Student
+  Applicant <|-- Candidate
+}
+
+note bottom of Applicant
+  Persistance : table PostgreSQL "students"
+  Discriminant account_kind
+  student | candidate
+end note
+
+note right of Student
+  Profil academique
+  Stages observation
+  et operationnel
+end note
+
+note right of Candidate
+  Profil carriere
+  Stage fonctionnel 4-6 mois
+end note
+
+' ============================================================
+' RECRUTEMENT (offres et candidatures)
+' ============================================================
+
+package "Recrutement" #E3F2FD {
+
+  class Job {
+    - id : Integer
+    - recruiter_id : UUID
+    - title : String
+    - description : Text
+    - required_skills : Text
+    - location : String
+    - employment_type : String
+    - status : JobStatus
+    - created_at : DateTime
+    - updated_at : DateTime
+  }
+
+  class Application {
+    - id : Integer
+    - student_id : UUID
+    - job_id : Integer
+    - cover_letter : Text
+    - internship_type : InternshipDurationType
+    - status : ApplicationStatus
+    - match_score : Integer
+    - interview_message : Text
+    - interview_at : DateTime
+    - created_at : DateTime
+    - updated_at : DateTime
+  }
+
+  class SavedJob {
+    - id : Integer
+    - student_id : UUID
+    - job_id : Integer
+    - created_at : DateTime
+  }
+}
+
+' ============================================================
+' PLATEFORME (entretiens, notifications)
+' ============================================================
+
+package "Plateforme RH" #FFF3E0 {
+
+  class InterviewSlot {
+    - id : Integer
+    - recruiter_id : UUID
+    - starts_at : DateTime
+    - ends_at : DateTime
+    - is_booked : Boolean
+    - created_at : DateTime
+  }
+
+  class CandidateAvailability {
+    - id : Integer
+    - student_id : UUID
+    - starts_at : DateTime
+    - ends_at : DateTime
+    - created_at : DateTime
+  }
+
+  class Meeting {
+    - id : Integer
+    - application_id : Integer
+    - recruiter_id : UUID
+    - student_id : UUID
+    - job_id : Integer
+    - slot_id : Integer
+    - scheduled_at : DateTime
+    - location : String
+    - notes : Text
+    - status : String
+    - created_at : DateTime
+    - updated_at : DateTime
+  }
+
+  class Notification {
+    - id : Integer
+    - user_email : String
+    - user_role : String
+    - type : NotificationType
+    - title : String
+    - message : Text
+    - is_read : Boolean
+    - created_at : DateTime
+  }
+}
+
+' ============================================================
+' TRACABILITE (IA et audit)
+' ============================================================
+
+package "Tracabilite et IA" #F3E5F5 {
+
+  class RecommendationHistory {
+    - id : Integer
+    - student_id : UUID
+    - job_id : Integer
+    - compatibility_score : Integer
+    - explanation : Text
+    - created_at : DateTime
+  }
+
+  class AuditLog {
+    - id : Integer
+    - actor_email : String
+    - actor_role : String
+    - action : String
+    - resource : String
+    - details : Text
+    - created_at : DateTime
+  }
+}
+
+' ============================================================
+' RELATIONS (cardinalites alignees sur SQLAlchemy)
+' ============================================================
+
+Recruiter "1" -- "0..*" Job : publie
+Applicant "1" -- "0..*" Application : soumet
+Job "1" -- "0..*" Application : recoit
+Applicant "1" -- "0..*" SavedJob : sauvegarde
+Job "1" -- "0..*" SavedJob
+Applicant "1" -- "0..*" RecommendationHistory
+Job "1" -- "0..*" RecommendationHistory
+Recruiter "1" -- "0..*" InterviewSlot
+Applicant "1" -- "0..*" CandidateAvailability
+Application "1" -- "0..1" Meeting
+Recruiter "1" -- "0..*" Meeting
+Applicant "1" -- "0..*" Meeting
+Job "1" -- "0..*" Meeting
+
+Job ..> JobStatus
+Application ..> ApplicationStatus
+Application ..> InternshipDurationType
+Notification ..> NotificationType
+
+@enduml

@@ -1,14 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_student
 from app.database import get_db
-from app.models.recruitment import Application, Job, JobStatus, SavedJob, Student
-from app.schemas.recruitment import ApplicationCreate, ApplicationOut, JobOut, SavedJobOut, StudentOut, StudentUpdate
-from app.services.recruitment import candidate_match_score, extract_skills, extract_text_from_upload, save_cv
+from app.models.recruitment import (
+    Application,
+    ApplicationStatus,
+    Job,
+    JobStatus,
+    SavedJob,
+    Student,
+)
+from app.modules.matching.service import MatchingService
+from app.modules.platform.audit import AuditAction, record_audit
+from app.modules.users.service import UserService
+from app.routers.cv_routes import build_cv_routes
+from app.schemas.recruitment import (
+    ApplicationCreate,
+    ApplicationOut,
+    SavedJobOut,
+    StudentDashboardApplicationOut,
+    StudentDashboardOut,
+    StudentOut,
+    StudentUpdate,
+)
 
-router = APIRouter(prefix="/students", tags=["students"])
+router = APIRouter(prefix="/students", tags=["students", "users"])
 
 
 @router.get("/me", response_model=StudentOut)
@@ -17,38 +35,48 @@ def get_profile(current: Student = Depends(get_current_student)):
 
 
 @router.patch("/me", response_model=StudentOut)
-def update_profile(payload: StudentUpdate, current: Student = Depends(get_current_student), db: Session = Depends(get_db)):
+def update_profile(
+    payload: StudentUpdate,
+    current: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(current, field, value)
+    record_audit(
+        db,
+        actor_email=current.email,
+        actor_role="student",
+        action=AuditAction.UPDATE_PROFILE,
+        resource=str(current.id),
+    )
     db.commit()
     db.refresh(current)
     return current
 
 
-@router.post("/me/cv", response_model=StudentOut)
-async def upload_cv(file: UploadFile = File(...), current: Student = Depends(get_current_student), db: Session = Depends(get_db)):
-    contents = await file.read()
-    try:
-        path = save_cv(str(current.id), file.filename, contents)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-
-    extracted_text = extract_text_from_upload(file.filename, contents)
-    extracted_skills = extract_skills(extracted_text)
-    existing_skills = {skill.strip() for skill in (current.technical_skills or current.skills or "").split(",") if skill.strip()}
-    merged_skills = sorted(existing_skills | set(extracted_skills))
-
-    current.cv_filename = file.filename
-    current.cv_path = path
-    if merged_skills:
-        current.technical_skills = ", ".join(merged_skills)
-        current.skills = current.technical_skills
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_profile(
+    current: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    student_id = current.id
+    email = current.email
+    UserService.delete_student(current, db)
+    record_audit(
+        db,
+        actor_email=email,
+        actor_role="student",
+        action=AuditAction.DELETE_PROFILE,
+        resource=str(student_id),
+    )
     db.commit()
-    db.refresh(current)
-    return current
 
 
-@router.post("/jobs/{job_id}/apply", response_model=ApplicationOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/jobs/{job_id}/apply",
+    response_model=ApplicationOut,
+    status_code=status.HTTP_201_CREATED,
+)
 def apply_to_job(
     job_id: int,
     payload: ApplicationCreate,
@@ -63,7 +91,7 @@ def apply_to_job(
         student_id=current.id,
         job_id=job.id,
         cover_letter=payload.cover_letter,
-        match_score=candidate_match_score(current.technical_skills or current.skills, job.required_skills),
+        match_score=MatchingService.compatibility_score(current, job),
     )
     db.add(application)
     try:
@@ -72,16 +100,92 @@ def apply_to_job(
         db.rollback()
         raise HTTPException(status_code=409, detail="You already applied to this job")
     db.refresh(application)
+    record_audit(
+        db,
+        actor_email=current.email,
+        actor_role="student",
+        action=AuditAction.APPLY_JOB,
+        resource=str(application.id),
+        details=f"job:{job.id} · {job.title} · score:{application.match_score}",
+    )
+    db.commit()
+    db.refresh(application)
     return application
 
 
 @router.get("/me/applications", response_model=list[ApplicationOut])
-def my_applications(current: Student = Depends(get_current_student), db: Session = Depends(get_db)):
-    return db.query(Application).filter(Application.student_id == current.id).order_by(Application.created_at.desc()).all()
+def my_applications(
+    current: Student = Depends(get_current_student), db: Session = Depends(get_db)
+):
+    return (
+        db.query(Application)
+        .filter(Application.student_id == current.id)
+        .order_by(Application.created_at.desc())
+        .all()
+    )
 
 
-@router.post("/jobs/{job_id}/save", response_model=SavedJobOut, status_code=status.HTTP_201_CREATED)
-def save_job(job_id: int, current: Student = Depends(get_current_student), db: Session = Depends(get_db)):
+@router.get("/me/dashboard", response_model=StudentDashboardOut)
+def my_dashboard(
+    current: Student = Depends(get_current_student), db: Session = Depends(get_db)
+):
+    applications = (
+        db.query(Application)
+        .options(joinedload(Application.job))
+        .filter(Application.student_id == current.id)
+        .order_by(Application.created_at.desc())
+        .all()
+    )
+    saved_jobs = (
+        db.query(SavedJob)
+        .options(joinedload(SavedJob.job))
+        .filter(SavedJob.student_id == current.id)
+        .order_by(SavedJob.created_at.desc())
+        .all()
+    )
+
+    dashboard_applications = [
+        StudentDashboardApplicationOut(
+            id=application.id,
+            job_id=application.job_id,
+            job_title=application.job.title,
+            job_location=application.job.location,
+            job_employment_type=application.job.employment_type,
+            cover_letter=application.cover_letter,
+            internship_type=application.internship_type,
+            status=application.status,
+            match_score=application.match_score,
+            interview_message=application.interview_message,
+            interview_at=application.interview_at,
+            created_at=application.created_at,
+        )
+        for application in applications
+    ]
+
+    interview_count = sum(
+        application.status == ApplicationStatus.interview_invited
+        for application in applications
+    )
+
+    return StudentDashboardOut(
+        total_applications=len(applications),
+        interview_invites=interview_count,
+        saved_jobs_count=len(saved_jobs),
+        applications=dashboard_applications,
+        saved_jobs=saved_jobs,
+    )
+
+
+@router.post(
+    "/jobs/{job_id}/save",
+    response_model=SavedJobOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def save_job(
+    job_id: int,
+    current: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
     job = db.query(Job).filter(Job.id == job_id, Job.status == JobStatus.open).first()
     if not job:
         raise HTTPException(status_code=404, detail="Open job not found")
@@ -98,8 +202,16 @@ def save_job(job_id: int, current: Student = Depends(get_current_student), db: S
 
 
 @router.delete("/jobs/{job_id}/save", status_code=status.HTTP_204_NO_CONTENT)
-def unsave_job(job_id: int, current: Student = Depends(get_current_student), db: Session = Depends(get_db)):
-    saved = db.query(SavedJob).filter(SavedJob.student_id == current.id, SavedJob.job_id == job_id).first()
+def unsave_job(
+    job_id: int,
+    current: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    saved = (
+        db.query(SavedJob)
+        .filter(SavedJob.student_id == current.id, SavedJob.job_id == job_id)
+        .first()
+    )
     if not saved:
         raise HTTPException(status_code=404, detail="Saved job not found")
     db.delete(saved)
@@ -107,5 +219,15 @@ def unsave_job(job_id: int, current: Student = Depends(get_current_student), db:
 
 
 @router.get("/me/saved-jobs", response_model=list[SavedJobOut])
-def my_saved_jobs(current: Student = Depends(get_current_student), db: Session = Depends(get_db)):
-    return db.query(SavedJob).filter(SavedJob.student_id == current.id).order_by(SavedJob.created_at.desc()).all()
+def my_saved_jobs(
+    current: Student = Depends(get_current_student), db: Session = Depends(get_db)
+):
+    return (
+        db.query(SavedJob)
+        .filter(SavedJob.student_id == current.id)
+        .order_by(SavedJob.created_at.desc())
+        .all()
+    )
+
+
+build_cv_routes(router, get_current_student)

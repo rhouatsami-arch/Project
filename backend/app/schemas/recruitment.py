@@ -1,9 +1,24 @@
+from __future__ import annotations
+
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    computed_field,
+    model_validator,
+)
 
-from app.models.recruitment import ApplicationStatus, JobStatus
+from app.models.recruitment import (
+    INTERNSHIP_DURATION_LABELS,
+    ApplicationStatus,
+    InternshipDurationType,
+    JobStatus,
+    parse_internship_duration_type,
+)
 
 
 class TokenOut(BaseModel):
@@ -23,6 +38,8 @@ class StudentRegister(BaseModel):
     graduation_year: int | None = None
     technical_skills: str | None = None
     soft_skills: str | None = None
+    internship_type: str | None = None
+    internship_duration: str | None = None
 
 
 class StudentUpdate(BaseModel):
@@ -40,6 +57,8 @@ class StudentUpdate(BaseModel):
     projects: str | None = None
     certifications: str | None = None
     languages: str | None = None
+    internship_type: str | None = None
+    internship_duration: str | None = None
 
 
 class StudentOut(BaseModel):
@@ -59,6 +78,9 @@ class StudentOut(BaseModel):
     projects: str | None
     certifications: str | None
     languages: str | None
+    internship_type: str | None
+    internship_duration: str | None
+    account_kind: str = "student"
     cv_filename: str | None
     created_at: datetime
 
@@ -128,11 +150,69 @@ class ApplicationCreate(BaseModel):
     cover_letter: str | None = None
 
 
+class InternshipApplicationCreate(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "internship_duration": "observation",
+                "cover_letter": "I am interested in this internship opportunity.",
+            }
+        }
+    )
+
+    internship_duration: InternshipDurationType | None = Field(
+        default=None,
+        description=(
+            "observation = 1 to 2 weeks, operational = 1 to 3 months, "
+            "functional = 4 to 6 months"
+        ),
+    )
+    internship_type: InternshipDurationType | None = Field(
+        default=None,
+        description="Alias for internship_duration",
+    )
+    cover_letter: str | None = None
+
+    @model_validator(mode="after")
+    def resolve_internship_duration(self):
+        raw = self.internship_duration or self.internship_type
+        if raw is None:
+            raise ValueError("internship_duration is required")
+        self.internship_duration = parse_internship_duration_type(raw)
+        self.internship_type = self.internship_duration
+        return self
+
+
 class ApplicationOut(BaseModel):
     id: int
     job_id: int
     student_id: UUID
     cover_letter: str | None
+    internship_type: InternshipDurationType | None
+    status: ApplicationStatus
+    match_score: int
+    interview_message: str | None
+    interview_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+    @computed_field
+    @property
+    def internship_duration_label(self) -> str | None:
+        if self.internship_type is None:
+            return None
+        return INTERNSHIP_DURATION_LABELS.get(self.internship_type)
+
+
+class StudentDashboardApplicationOut(BaseModel):
+    id: int
+    job_id: int
+    job_title: str
+    job_location: str | None
+    job_employment_type: str | None
+    cover_letter: str | None
+    internship_type: InternshipDurationType | None = None
     status: ApplicationStatus
     match_score: int
     interview_message: str | None
@@ -142,34 +222,54 @@ class ApplicationOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class CandidateOut(BaseModel):
-    application_id: int
-    student_id: UUID
-    full_name: str
-    email: str
-    phone: str | None
-    university: str | None
-    field_of_study: str | None
-    skills: str | None
-    technical_skills: str | None
-    soft_skills: str | None
-    experiences: str | None
-    projects: str | None
-    certifications: str | None
-    languages: str | None
-    cv_filename: str | None
-    application_status: ApplicationStatus
-    match_score: int
-
-
-class InterviewInvite(BaseModel):
-    interview_at: datetime
-    message: str | None = None
-
-
 class SavedJobOut(BaseModel):
     id: int
     job: JobOut
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class StudentDashboardOut(BaseModel):
+    total_applications: int
+    interview_invites: int
+    saved_jobs_count: int
+    applications: list[StudentDashboardApplicationOut]
+    saved_jobs: list[SavedJobOut]
+
+    model_config = {"from_attributes": True}
+
+
+class RecruiterRecentApplicationOut(BaseModel):
+    application_id: int
+    job_id: int
+    job_title: str
+    candidate_name: str
+    candidate_email: str
+    status: str
+    match_score: int
+    created_at: str
+
+
+class RecruiterUpcomingMeetingOut(BaseModel):
+    meeting_id: int
+    job_id: int
+    scheduled_at: str
+    status: str
+    location: str | None
+    candidate_name: str
+
+
+class RecruiterDashboardOut(BaseModel):
+    open_jobs: int
+    closed_jobs: int
+    total_applications: int
+    applied_count: int
+    shortlisted_count: int
+    interview_count: int
+    rejected_count: int
+    hired_count: int
+    upcoming_meetings: int
+    average_match_score: int
+    recent_applications: list[RecruiterRecentApplicationOut]
+    upcoming_meeting_list: list[RecruiterUpcomingMeetingOut]

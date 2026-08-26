@@ -1,0 +1,242 @@
+@startuml MatiousHire_Classes_Methods_Domain
+' MatiousHire - Methodes par entite domaine (detail attributes + operations)
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+title MatiousHire - Classes domaine : attributs et methodes
+
+package "Applicant / Student / Candidate" {
+
+  abstract class Applicant {
+    - id : UUID
+    - email : String
+    - hashed_password : String
+    - first_name : String
+    - last_name : String
+    - phone : String
+    - university : String
+    - field_of_study : String
+    - graduation_year : Integer
+    - bio : Text
+    - skills : Text
+    - technical_skills : Text
+    - soft_skills : Text
+    - experiences : Text
+    - projects : Text
+    - certifications : Text
+    - languages : Text
+    - internship_type : String
+    - internship_duration : String
+    - account_kind : String
+    - cv_filename : String
+    - cv_path : String
+    - cv_extracted_text : Text
+    - cv_extracted_at : DateTime
+    - created_at : DateTime
+    - updated_at : DateTime
+    --
+    + updateProfile()
+    + uploadCv()
+    + deleteCv()
+    + getExtractedCv()
+    + downloadCv()
+    + applyToJob()
+    + saveJob()
+    + unsaveJob()
+    + getDashboard()
+    + getApplications()
+    + getSavedJobs()
+    + getRecommendations()
+    + getRecommendationHistory()
+    + getNotifications()
+    + addAvailability()
+    + listMeetings()
+    + confirmMeeting()
+    + refuseMeeting()
+  }
+
+  class Student
+  class Candidate
+
+  Applicant <|-- Student
+  Applicant <|-- Candidate
+}
+
+package "Recruiter" {
+
+  class Recruiter {
+    - id : UUID
+    - email : String
+    - hashed_password : String
+    - first_name : String
+    - last_name : String
+    - company_name : String
+    - phone : String
+    - created_at : DateTime
+    - updated_at : DateTime
+    --
+    + updateProfile()
+    + deleteProfile()
+    + getDashboard()
+    + createJob()
+    + updateJob()
+    + deleteJob()
+    + listMyJobs()
+    + listCandidates()
+    + shortlistApplication()
+    + rejectApplication()
+    + hireApplication()
+    + inviteInterview()
+    + rankCandidates()
+    + createSlot()
+    + listSlots()
+    + deleteSlot()
+    + proposeMeeting()
+    + scheduleMeeting()
+    + cancelMeeting()
+    + rescheduleMeeting()
+    + completeMeeting()
+    + listMeetings()
+    + getNotifications()
+  }
+}
+
+package "Admin" {
+
+  class Admin {
+    - id : UUID
+    - email : String
+    - hashed_password : String
+    - first_name : String
+    - last_name : String
+    - created_at : DateTime
+    --
+    + getProfile()
+    + getDashboard()
+    + listStudents()
+    + listCandidates()
+    + listRecruiters()
+    + createStudent()
+    + createCandidate()
+    + createRecruiter()
+    + deleteStudent()
+    + deleteCandidate()
+    + deleteRecruiter()
+    + getAuditLogs()
+  }
+}
+
+package "Recrutement" {
+
+  class Job {
+    - id : Integer
+    - recruiter_id : UUID
+    - title : String
+    - description : Text
+    - required_skills : Text
+    - location : String
+    - employment_type : String
+    - status : JobStatus
+    - created_at : DateTime
+    - updated_at : DateTime
+  }
+
+  class Application {
+    - id : Integer
+    - student_id : UUID
+    - job_id : Integer
+    - cover_letter : Text
+    - internship_type : InternshipDurationType
+    - status : ApplicationStatus
+    - match_score : Integer
+    - interview_message : Text
+    - interview_at : DateTime
+    - created_at : DateTime
+    - updated_at : DateTime
+  }
+
+  class SavedJob {
+    - id : Integer
+    - student_id : UUID
+    - job_id : Integer
+    - created_at : DateTime
+  }
+}
+
+package "Plateforme" {
+
+  class Meeting {
+    - id : Integer
+    - application_id : Integer
+    - recruiter_id : UUID
+    - student_id : UUID
+    - job_id : Integer
+    - slot_id : Integer
+    - scheduled_at : DateTime
+    - location : String
+    - notes : Text
+    - status : String
+  }
+
+  class InterviewSlot {
+    - id : Integer
+    - recruiter_id : UUID
+    - starts_at : DateTime
+    - ends_at : DateTime
+    - is_booked : Boolean
+  }
+
+  class CandidateAvailability {
+    - id : Integer
+    - student_id : UUID
+    - starts_at : DateTime
+    - ends_at : DateTime
+  }
+
+  class Notification {
+    - id : Integer
+    - user_email : String
+    - user_role : String
+    - type : NotificationType
+    - title : String
+    - message : Text
+    - is_read : Boolean
+  }
+
+  class RecommendationHistory {
+    - id : Integer
+    - student_id : UUID
+    - job_id : Integer
+    - compatibility_score : Integer
+    - explanation : Text
+    - created_at : DateTime
+  }
+
+  class AuditLog {
+    - id : Integer
+    - actor_email : String
+    - actor_role : String
+    - action : String
+    - resource : String
+    - details : Text
+    - created_at : DateTime
+  }
+}
+
+Recruiter "1" -- "0..*" Job
+Applicant "1" -- "0..*" Application
+Job "1" -- "0..*" Application
+Applicant "1" -- "0..*" SavedJob
+Applicant "1" -- "0..*" RecommendationHistory
+
+note bottom of Applicant
+  Implementation SQLAlchemy : table students
+  Student account_kind = student
+  Candidate account_kind = candidate
+  Methodes exposees via routers + services
+end note
+
+@enduml

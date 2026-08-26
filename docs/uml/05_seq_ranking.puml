@@ -1,0 +1,42 @@
+@startuml Seq_Ranking
+' MatiousHire PFE 2026 — Séquence classement candidats (UC12)
+' Slide 31
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title Classement candidats — GET /matching/recruiters/jobs/{id}/ranking
+
+actor Recruteur
+participant "Next.js\n(Pipeline UI)" as UI
+participant "FastAPI\n/matching" as API
+participant "MatchingService" as MS
+participant "MatchingPipeline" as MP
+database "PostgreSQL" as DB
+
+Recruteur -> UI : Ouvrir pipeline\npour job #N
+UI -> API : GET /recruiters/jobs/N/ranking\n?min_score=0
+activate API
+API -> API : Vérifier JWT (recruiter)
+API -> DB : SELECT applications\nJOIN students\nWHERE job_id = N
+activate DB
+DB --> API : candidatures + profils
+deactivate DB
+
+loop Pour chaque candidature
+  API -> MS : safe_score_student_job(student, job)
+  activate MS
+  MS -> MP : run(profile, job)
+  MP --> MS : MatchResult
+  MS --> API : score + breakdown
+  deactivate MS
+end
+
+MS -> MS : Tri DESC\npar compatibility_score
+API -> DB : UPDATE applications\nSET match_score = ...
+API -> DB : INSERT audit_logs\n(RANK_CANDIDATES)
+API --> UI : CandidateRankingOut[]
+deactivate API
+UI --> Recruteur : Liste classée +\nbreakdown IA par candidat
+
+@enduml

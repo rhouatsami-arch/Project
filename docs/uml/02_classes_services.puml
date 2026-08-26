@@ -1,0 +1,256 @@
+@startuml MatiousHire_Classes_Services
+' MatiousHire PFE 2026 - Diagramme de classes SERVICES (couche metier + IA)
+' Aligné sur app/modules/ - Slide 21 annexe
+
+top to bottom direction
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+title MatiousHire - Diagramme de classes services
+
+' ============================================================
+' DTO internes matching (app/modules/matching/scorer.py)
+' ============================================================
+
+package "DTO Matching" #F3E5F5 {
+
+  class ApplicantProfile {
+    - technical_skills : String
+    - soft_skills : String
+    - cv_extracted_text : Text
+    - field_of_study : String
+    - experiences : Text
+    - projects : Text
+    - bio : Text
+    - location : String
+  }
+
+  class JobProfile {
+    - title : String
+    - description : Text
+    - required_skills : String
+    - location : String
+    - employment_type : String
+  }
+
+  class ScoreBreakdown {
+    - skills_score : Float
+    - experience_score : Float
+    - semantic_score : Float
+    - education_score : Float
+    - location_score : Float
+    - availability_score : Float
+    - matched_skills : List
+    - missing_skills : List
+    - penalty_factor : Float
+  }
+
+  class MatchResult {
+    - compatibility_score : Integer
+    - rank_label : String
+    - breakdown : ScoreBreakdown
+    - explanation : String
+  }
+
+  class MatchingCandidate {
+    - skills : Set
+    - experience_years : Float
+    - resume_text : Text
+    - education : String
+    - location : String
+    - cv_complete : Boolean
+  }
+
+  class MatchingJob {
+    - required_skills : Set
+    - optional_skills : Set
+    - required_experience : Float
+    - description : Text
+    - location : String
+  }
+}
+
+' ============================================================
+' MODULE MATCHING IA
+' ============================================================
+
+package "Module Matching IA" #E1BEE7 {
+
+  class MatchingService {
+    + profile_from_student()
+    + profile_from_job()
+    + score_student_job()
+    + recommend_jobs()
+    + rank_applications()
+    + record_recommendations()
+  }
+
+  class MatchingPipeline {
+    + run()
+    + run_traced()
+    + stages()
+  }
+
+  class MatchingScoreService {
+    + calculate_matching_score()
+    + matching_job_from_raw()
+  }
+
+  class ScoreFormula {
+    + compute_skills_score()
+    + compute_experience_score()
+    + compute_semantic_similarity()
+    + compute_education_score()
+    + compute_location_score()
+    + compute_availability_score()
+    + compute_penalties()
+    + classify_score()
+  }
+
+  class NlpModule {
+    + tokenize()
+    + tfidf_cosine_similarity()
+    + jaccard_similarity()
+  }
+
+  class EmbeddingsModule {
+    + expand_skill_tokens()
+    + embedding_similarity()
+  }
+}
+
+' ============================================================
+' MODULE CV
+' ============================================================
+
+package "Module CV" #FFF9C4 {
+
+  class CvService {
+    + upload()
+    + delete()
+    + get_extracted()
+  }
+
+  class CvStorage {
+    + validate_cv_file()
+    + save_cv_file()
+    + delete_cv_file()
+  }
+
+  class CvExtraction {
+    + extract_raw_text()
+  }
+
+  class CvSkills {
+    + extract_skills_from_text()
+  }
+
+  class CvUploadResult {
+    - filename : String
+    - path : String
+    - raw_text : String
+    - skills : List
+    - char_count : Integer
+  }
+}
+
+' ============================================================
+' MODULE LLM + PLATFORM
+' ============================================================
+
+package "Module LLM et Platform" #C8E6C9 {
+
+  class LlmExplanation {
+    + explain_compatibility()
+    + build_strengths()
+    + build_improvement_tips()
+    + build_score_justification()
+  }
+
+  class AuditModule {
+    + record_audit()
+    + audit_to_dict()
+  }
+
+  class OfferService {
+    + list_open()
+    + create()
+    + get_open()
+  }
+
+  class UserService {
+    + create_student()
+    + delete_student()
+  }
+}
+
+' ============================================================
+' SCHEMAS API (Pydantic - extrait)
+' ============================================================
+
+package "Schemas API REST" #E3F2FD {
+
+  class CandidateSchema {
+    + id : UUID
+    + email : String
+    + account_kind : String
+    + technical_skills : String
+  }
+
+  class StudentSchema {
+    + id : UUID
+    + account_kind : String
+    + internship_type : String
+  }
+
+  class JobRecommendationOut {
+    + compatibility_score : Integer
+    + rank_label : String
+    + explanation : String
+  }
+
+  class CandidateRankingOut {
+    + application_id : Integer
+    + student_id : UUID
+    + compatibility_score : Integer
+    + rank : Integer
+  }
+}
+
+class AuditLog <<table>> {
+  - actor_email : String
+  - action : String
+}
+
+' ============================================================
+' RELATIONS SERVICES
+' ============================================================
+
+MatchingService ..> MatchingPipeline
+MatchingService ..> ApplicantProfile
+MatchingService ..> JobProfile
+MatchingPipeline ..> MatchingScoreService
+MatchingPipeline ..> LlmExplanation
+MatchingScoreService ..> ScoreFormula
+MatchingScoreService ..> MatchingCandidate
+MatchingScoreService ..> MatchingJob
+ScoreFormula ..> NlpModule
+ScoreFormula ..> EmbeddingsModule
+MatchingPipeline ..> MatchResult
+MatchResult *-- ScoreBreakdown
+
+CvService ..> CvStorage
+CvService ..> CvExtraction
+CvService ..> CvSkills
+CvService ..> CvUploadResult
+
+MatchingService ..> JobRecommendationOut
+MatchingService ..> CandidateRankingOut
+CandidateSchema ..> ApplicantProfile : mappe
+StudentSchema ..> ApplicantProfile : mappe
+
+AuditModule ..> AuditLog : persiste
+
+@enduml

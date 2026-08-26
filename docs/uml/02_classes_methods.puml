@@ -1,0 +1,521 @@
+@startuml MatiousHire_Classes_Methods
+' MatiousHire PFE 2026 - Diagramme de classes COMPLET avec TOUTES les methodes
+' Aligné sur app/ - Syntaxe PlantUML valide
+
+top to bottom direction
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+title MatiousHire - Diagramme de classes (methodes completes)
+
+' ================================================================
+' 1. DOMAINE - Entites avec methodes metier logiques
+' ================================================================
+
+package "1. Domaine metier" #E8F5E9 {
+
+  abstract class Applicant {
+    - id : UUID
+    - email : String
+    - technical_skills : Text
+    - cv_extracted_text : Text
+    - account_kind : String
+    --
+    + updateProfile()
+    + uploadCv()
+    + deleteCv()
+    + getExtractedCv()
+    + applyToJob()
+    + saveJob()
+    + unsaveJob()
+    + getDashboard()
+    + getRecommendations()
+    + getApplications()
+  }
+
+  class Student
+  class Candidate {
+    + getLlmExplanation()
+  }
+
+  class Recruiter {
+    - company_name : String
+    --
+    + publishJob()
+    + updateJob()
+    + deleteJob()
+    + listCandidates()
+    + shortlistCandidate()
+    + rejectCandidate()
+    + hireCandidate()
+    + inviteInterview()
+    + rankCandidates()
+    + getDashboard()
+    + manageSlots()
+    + manageMeetings()
+  }
+
+  class Admin {
+    + getDashboard()
+    + listStudents()
+    + listCandidates()
+    + listRecruiters()
+    + createStudent()
+    + createCandidate()
+    + createRecruiter()
+    + deleteStudent()
+    + deleteCandidate()
+    + deleteRecruiter()
+    + viewAuditLogs()
+  }
+
+  class Job {
+    - title : String
+    - required_skills : Text
+    - status : JobStatus
+  }
+
+  class Application {
+    - student_id : UUID
+    - match_score : Integer
+    - status : ApplicationStatus
+  }
+
+  class SavedJob
+  class Meeting
+  class InterviewSlot
+  class CandidateAvailability
+  class Notification
+  class RecommendationHistory
+  class AuditLog
+
+  Applicant <|-- Student
+  Applicant <|-- Candidate
+}
+
+' ================================================================
+' 2. AUTHENTIFICATION
+' ================================================================
+
+package "2. Authentification (app/auth.py)" #FFEBEE {
+
+  class AuthService <<utility>> {
+    + {static} hash_password()
+    + {static} verify_password()
+    + {static} create_access_token()
+    + {static} decode_token()
+    + {static} get_current_student()
+    + {static} get_current_candidate()
+    + {static} get_current_recruiter()
+    + {static} get_current_admin()
+  }
+}
+
+' ================================================================
+' 3. SERVICES UTILISATEURS ET OFFRES
+' ================================================================
+
+package "3. Services metier" #FFF3E0 {
+
+  class UserService {
+    + {static} update_student()
+    + {static} update_recruiter()
+    + {static} delete_student()
+    + {static} delete_recruiter()
+    + {static} create_student()
+    + {static} create_recruiter()
+  }
+
+  class OfferService {
+    + {static} list_open()
+    + {static} get_open()
+    + {static} list_for_recruiter()
+    + {static} create()
+    + {static} update()
+    + {static} delete()
+  }
+}
+
+' ================================================================
+' 4. MODULE CV
+' ================================================================
+
+package "4. Module CV" #FFF9C4 {
+
+  class CvService {
+    + {static} upload()
+    + {static} delete()
+    + {static} get_extracted()
+  }
+
+  class CvStorage <<utility>> {
+    + {static} validate_cv_file()
+    + {static} save_cv_file()
+    + {static} delete_cv_file()
+  }
+
+  class CvExtraction <<utility>> {
+    + {static} extract_raw_text()
+    + {static} normalize_text()
+  }
+
+  class CvSkills <<utility>> {
+    + {static} extract_skills_from_text()
+  }
+}
+
+' ================================================================
+' 5. MODULE MATCHING IA
+' ================================================================
+
+package "5. Module Matching IA" #F3E5F5 {
+
+  class MatchingService {
+    + {static} profile_from_student()
+    + {static} profile_from_job()
+    + {static} score_student_job()
+    + {static} safe_score_student_job()
+    + {static} compatibility_score()
+    + {static} recommend_jobs()
+    + {static} record_recommendations()
+    + {static} rank_applications()
+  }
+
+  class MatchingPipeline {
+    + {static} stages()
+    + {static} run()
+    + {static} run_traced()
+    + {static} rank_label()
+  }
+
+  class ScorerModule <<utility>> {
+    + {static} compute_compatibility_score()
+    + {static} compatibility_rank_label()
+  }
+
+  class MatchingScoreService <<utility>> {
+    + {static} calculate_matching_score()
+    + {static} matching_job_from_raw()
+    + {static} get_matched_skills()
+    + {static} get_missing_skills()
+    + {static} compute_skills_score()
+    + {static} compute_experience_score()
+    + {static} compute_penalties()
+  }
+
+  class MatchingCandidate <<DTO>>
+  class MatchingJob <<DTO>>
+  class MatchingScoreResult <<DTO>>
+
+  class ScoreFormula <<utility>> {
+    + {static} parse_required_optional_skills()
+    + {static} extract_experience_years()
+    + {static} compute_skills_score()
+    + {static} compute_experience_score()
+    + {static} compute_semantic_similarity()
+    + {static} compute_education_score()
+    + {static} compute_location_score()
+    + {static} compute_availability_score()
+    + {static} compute_penalties()
+    + {static} classify_score()
+    + {static} precision_at_k()
+    + {static} calculate_matching_score()
+  }
+
+  class NlpModule <<utility>> {
+    + {static} normalize_text()
+    + {static} tokenize()
+    + {static} split_skill_tokens()
+    + {static} jaccard_similarity()
+    + {static} cosine_similarity_counts()
+    + {static} tfidf_cosine_similarity()
+    + {static} keyword_overlap_score()
+  }
+
+  class EmbeddingsModule <<utility>> {
+    + {static} expand_skill_tokens()
+    + {static} embedding_similarity()
+  }
+
+  class ApplicantProfile <<DTO>> {
+    + technical_skills : String
+    + cv_extracted_text : Text
+  }
+
+  class JobProfile <<DTO>> {
+    + title : String
+    + description : Text
+  }
+
+  class ScoreBreakdown <<DTO>> {
+    + total_score() : Integer
+  }
+
+  class MatchResult <<DTO>> {
+    + compatibility_score : Integer
+    + rank_label : String
+  }
+}
+
+' ================================================================
+' 6. MODULE LLM
+' ================================================================
+
+package "6. Module LLM" #E1BEE7 {
+
+  class LlmService {
+    + {static} module_info()
+    + {static} analyze()
+    + {static} cv_summary_only()
+    - {static} _insight_from_parts()
+  }
+
+  class LlmInsight <<DTO>>
+
+  class LlmExplanation <<utility>> {
+    + {static} explain_compatibility()
+    + {static} build_strengths()
+    + {static} build_score_justification()
+    + {static} build_improvement_tips()
+    + {static} summarize_cv()
+    + {static} summarize_job()
+    + {static} interview_questions()
+  }
+}
+
+' ================================================================
+' 7. MODULE PLATFORM
+' ================================================================
+
+package "7. Module Platform" #C8E6C9 {
+
+  class MeetingService {
+    + {static} create_slot()
+    + {static} list_slots()
+    + {static} delete_slot()
+    + {static} add_availability()
+    + {static} list_availability()
+    + {static} delete_availability()
+    + {static} find_best_slot()
+    + {static} propose_best()
+    + {static} schedule()
+    + {static} confirm()
+    + {static} refuse()
+    + {static} cancel()
+    + {static} reschedule()
+    + {static} complete()
+    + {static} list_for_recruiter()
+    + {static} list_for_student()
+    - {static} _get_meeting()
+    - {static} _release_slot()
+  }
+
+  class NotificationService {
+    + {static} notify()
+  }
+
+  class AuditService {
+    + {static} log()
+  }
+
+  class AuditModule <<utility>> {
+    + {static} record_audit()
+    + {static} audit_to_dict()
+  }
+}
+
+' ================================================================
+' 8. API REST - Controleurs FastAPI
+' ================================================================
+
+package "8. API REST (routers)" #E3F2FD {
+
+  class AuthRouter <<controller>> {
+    + register_student()
+    + register_candidate()
+    + register_recruiter()
+    + register_admin()
+    + login()
+  }
+
+  class StudentRouter <<controller>> {
+    + get_profile()
+    + update_profile()
+    + delete_profile()
+    + apply_to_job()
+    + my_applications()
+    + my_dashboard()
+    + save_job()
+    + unsave_job()
+    + my_saved_jobs()
+  }
+
+  class CandidateRouter <<controller>> {
+    + get_profile()
+    + update_profile()
+    + delete_profile()
+    + apply_to_job()
+    + my_applications()
+    + my_dashboard()
+    + save_job()
+    + unsave_job()
+    + my_saved_jobs()
+  }
+
+  class RecruiterRouter <<controller>> {
+    + get_profile()
+    + recruiter_dashboard()
+    + update_profile()
+    + list_candidates_for_job()
+    + shortlist_candidate()
+    + reject_candidate()
+    + hire_candidate()
+    + invite_candidate()
+  }
+
+  class JobsRouter <<controller>> {
+    + list_jobs()
+    + my_jobs()
+    + get_job()
+    + create_job()
+    + update_job()
+    + delete_job()
+  }
+
+  class MatchingRouter <<controller>> {
+    + get_pipeline_info()
+    + run_matching_pipeline()
+    + calculate_matching_score()
+    + compute_match_score()
+    + student_recommendations()
+    + candidate_recommendations()
+    + recruiter_ranking()
+  }
+
+  class LlmRouter <<controller>> {
+    + llm_module_info()
+    + explain_match()
+    + cv_summary()
+    + explain_job()
+    + notifications()
+    + recommendation_history()
+  }
+
+  class MeetingsRouter <<controller>> {
+    + create_slot()
+    + list_slots()
+    + add_availability()
+    + propose_best_slot()
+    + schedule_meeting()
+    + confirm_meeting()
+    + refuse_meeting()
+    + cancel_meeting()
+    + reschedule_meeting()
+    + complete_meeting()
+    + list_meetings()
+  }
+
+  class CvRouter <<controller>> {
+    + upload_cv()
+    + get_cv_extracted_text()
+    + download_cv()
+    + delete_cv()
+  }
+
+  class AdminRouter <<controller>> {
+    + dashboard()
+    + list_users()
+    + create_users()
+    + delete_users()
+    + audit_logs()
+  }
+}
+
+' ================================================================
+' 9. INFRASTRUCTURE - Erreurs et persistance
+' ================================================================
+
+package "9. Infrastructure" #ECEFF1 {
+
+  class AppError <<exception>> {
+    + status_code : Integer
+    + detail : String
+  }
+
+  class NotFoundError
+  class ConflictError
+  class ValidationError
+  class UnauthorizedError
+  class ForbiddenError
+  class MatchingError
+
+  AppError <|-- NotFoundError
+  AppError <|-- ConflictError
+  AppError <|-- ValidationError
+  AppError <|-- UnauthorizedError
+  AppError <|-- ForbiddenError
+  AppError <|-- MatchingError
+
+  class ErrorHandlers <<utility>> {
+    + {static} register()
+    + {static} handle_app_error()
+    + {static} handle_http_exception()
+    + {static} handle_validation_error()
+    + {static} handle_integrity_error()
+    + {static} handle_sqlalchemy_error()
+    + {static} handle_value_error()
+    + {static} handle_unexpected_error()
+  }
+
+  class Database <<utility>> {
+    + {static} get_db()
+    + {static} init_db()
+  }
+}
+
+' ================================================================
+' RELATIONS PRINCIPALES
+' ================================================================
+
+StudentRouter ..> UserService
+StudentRouter ..> OfferService
+StudentRouter ..> CvService
+CandidateRouter ..> UserService
+CandidateRouter ..> MatchingService
+RecruiterRouter ..> OfferService
+RecruiterRouter ..> MatchingService
+JobsRouter ..> OfferService
+MatchingRouter ..> MatchingService
+MatchingRouter ..> MatchingPipeline
+LlmRouter ..> LlmService
+MeetingsRouter ..> MeetingService
+CvRouter ..> CvService
+AdminRouter ..> UserService
+AdminRouter ..> AuditService
+
+MatchingService ..> MatchingPipeline
+MatchingPipeline ..> ScorerModule
+MatchingPipeline ..> LlmExplanation
+ScorerModule ..> MatchingScoreService
+MatchingScoreService ..> ScoreFormula
+ScoreFormula ..> NlpModule
+ScoreFormula ..> EmbeddingsModule
+CvService ..> CvStorage
+CvService ..> CvExtraction
+CvService ..> CvSkills
+LlmService ..> LlmExplanation
+LlmService ..> MatchingPipeline
+AuditModule ..> AuditService
+UserService ..> Applicant
+OfferService ..> Job
+MeetingService ..> Meeting
+
+AuthRouter ..> AuthService
+StudentRouter ..> AuthService
+CandidateRouter ..> AuthService
+RecruiterRouter ..> AuthService
+AdminRouter ..> AuthService
+
+@enduml

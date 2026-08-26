@@ -1,0 +1,89 @@
+@startuml MatiousHire_Classes_Compact
+' MatiousHire PFE 2026 - Diagramme de classes COMPACT (vue jury rapide)
+' Detail complet : 02_classes_domain.puml + 02_classes_services.puml
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+title MatiousHire - Diagramme de classes (vue compacte)
+
+package "Utilisateurs" {
+
+  enum AccountKind {
+    student
+    candidate
+  }
+
+  abstract class Applicant {
+    - id : UUID
+    - email : String
+    - technical_skills : Text
+    - cv_extracted_text : Text
+    - account_kind : AccountKind
+  }
+
+  class Student
+  class Candidate
+  class Recruiter
+  class Admin
+
+  Applicant <|-- Student
+  Applicant <|-- Candidate
+}
+
+package "Recrutement" {
+
+  enum JobStatus {
+    open
+    closed
+  }
+
+  enum ApplicationStatus {
+    applied
+    shortlisted
+    interview_invited
+    rejected
+    hired
+  }
+
+  class Job {
+    - title : String
+    - required_skills : Text
+    - status : JobStatus
+  }
+
+  class Application {
+    - student_id : UUID
+    - match_score : Integer
+    - status : ApplicationStatus
+  }
+
+  class SavedJob
+}
+
+package "Plateforme" {
+
+  class Meeting
+  class InterviewSlot
+  class CandidateAvailability
+  class Notification
+  class RecommendationHistory
+  class AuditLog
+}
+
+Recruiter "1" -- "0..*" Job
+Applicant "1" -- "0..*" Application
+Job "1" -- "0..*" Application
+Applicant "1" -- "0..*" SavedJob
+Applicant "1" -- "0..*" RecommendationHistory
+Job "1" -- "0..*" RecommendationHistory
+Application "1" -- "0..1" Meeting
+
+note bottom of Applicant
+  Table PostgreSQL : students
+  account_kind : student | candidate
+end note
+
+@enduml

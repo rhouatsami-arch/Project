@@ -1,0 +1,49 @@
+@startuml Seq_Recommendation
+' MatiousHire PFE 2026 — Séquence recommandations IA (UC10)
+' Slide 20
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title Recommandation d'offres IA — GET /matching/candidates/me/recommendations
+
+actor Candidat
+participant "Next.js\n(ApplicantJobsPanel)" as UI
+participant "FastAPI\n/matching" as API
+participant "MatchingService" as MS
+participant "MatchingPipeline" as MP
+participant "score_formula\n+ matching_score_service" as SF
+database "PostgreSQL" as DB
+
+Candidat -> UI : Consulter top matches
+UI -> API : GET /candidates/me/recommendations\n?limit=5&min_score=30
+activate API
+API -> API : decode JWT (role=candidate)
+API -> DB : SELECT * FROM jobs\nWHERE status = 'open'
+activate DB
+DB --> API : liste offres
+deactivate DB
+
+loop Pour chaque offre ouverte
+  API -> MS : safe_score_student_job(student, job)
+  activate MS
+  MS -> MS : profile_from_student()\nprofile_from_job()
+  MS -> MP : run(profile, job)
+  activate MP
+  MP -> SF : calculate_matching_score()
+  activate SF
+  SF --> MP : final_score,\nexplanation_data
+  deactivate SF
+  MP --> MS : MatchResult\n(score, breakdown, explanation)
+  deactivate MP
+  MS --> API : MatchResult
+  deactivate MS
+end
+
+MS -> MS : Tri décroissant\npar compatibility_score
+API -> DB : INSERT recommendation_history
+API --> UI : JobRecommendationOut[]
+deactivate API
+UI --> Candidat : Afficher scores +\nexplications IA
+
+@enduml

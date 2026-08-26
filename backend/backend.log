@@ -1,0 +1,7 @@
+INFO:     Started server process [7100]
+INFO:     Waiting for application startup.
+2026-08-18 14:32:48,846 [INFO] app.main: Database schema verified
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8000): [winerror 10048] une seule utilisation de chaque adresse de socket (protocole/adresse réseau/port) est habituellement autorisée
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.

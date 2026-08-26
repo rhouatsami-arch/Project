@@ -1,0 +1,45 @@
+{
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/.venv": true,
+    "**/venv": true,
+    "**/.pytest_cache": true,
+    "**/.next": true,
+    "**/.idea": true,
+    "**/.vscode": true,
+    "**/AppData/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.venv": true,
+    "**/venv": true,
+    "**/.next": true,
+    "**/AppData/**": true,
+    "**/.vscode/**": true
+  },
+  
+  "eslint.workingDirectories": [
+    { "mode": "auto" }
+  ],
+  "js/ts.validate.enabled": false,
+  
+  "problems.exclude": {
+    "**/node_modules/**": true,
+    "**/.venv/**": true,
+    "**/venv/**": true,
+    "**/.next/**": true,
+    "**/.pytest_cache/**": true,
+    "**/AppData/**": true,
+    "**/.vscode/**": true,
+    "C:/Users/hp/AppData/Local/Programs/Microsoft VS Code/**": true,
+    "c:/Users/hp/AppData/Local/Programs/Microsoft VS Code/**": true,
+    "**/resources/app/extensions/**": true,
+    "**/resources/app/extensions/**/node_modules/**": true,
+    "**/resources/app/extensions/**/node_modules/typescript/lib/**": true,
+    "C:/Users/hp/AppData/Local/Programs/Microsoft VS Code/resources/app/extensions/node_modules/typescript/lib/lib.dom.d.ts": true
+  }
+  ,
+  "sourcery.enabled": false,
+  "sourcery.showDiagnostics": false,
+  "sourcery.disabled": true
+}

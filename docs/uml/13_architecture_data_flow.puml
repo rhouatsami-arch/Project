@@ -1,0 +1,57 @@
+@startuml MatiousHire_Architecture_DataFlow
+' MatiousHire PFE 2026 — Flux de données architecture
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title MatiousHire — Flux de données (architecture)
+
+|Utilisateur|
+start
+:Interaction UI\n(Next.js);
+
+|Couche API|
+:Requête REST\n+ JWT Bearer;
+:Validation Pydantic;
+
+if (Type d'opération?) then (Upload CV)
+  |Couche Métier — CV|
+  :CvService.upload();
+  :validate_cv_file();
+  |Couche Données|
+  :save_cv_file() → uploads/cvs/;
+  :extract_raw_text() → pypdf;
+  :UPDATE students\n(cv_extracted_text, skills);
+  |Couche Métier — Audit|
+  :record_audit(UPLOAD_CV);
+elseif (Recommandation IA) then (Reco)
+  |Couche Métier — Matching|
+  :MatchingService.recommend_jobs();
+  |Couche IA|
+  :MatchingPipeline.run()\npour chaque offre;
+  :calculate_matching_score();
+  |Couche Données|
+  :INSERT recommendation_history;
+elseif (Classement recruteur) then (Ranking)
+  |Couche Métier — Matching|
+  :rank_applications();
+  |Couche IA|
+  :score par candidature;
+  |Couche Données|
+  :UPDATE application.match_score;
+  :record_audit(RANK_CANDIDATES);
+else (CRUD métier)
+  |Couche Métier|
+  :users / offers / platform;
+  |Couche Données|
+  :PostgreSQL via SQLAlchemy;
+endif
+
+|Couche API|
+:Réponse JSON\n(structurée ou error handler);
+
+|Utilisateur|
+:Affichage UI;
+stop
+
+@enduml

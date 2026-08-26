@@ -1,0 +1,96 @@
+@startuml MatiousHire_UseCase
+' MatiousHire PFE 2026 — Cas d'utilisation
+' Slide 22 — Export PNG pour PowerPoint
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title MatiousHire — Diagramme de cas d'utilisation
+
+actor "Étudiant" as ET
+actor "Candidat" as CA
+actor "Recruteur" as RE
+actor "Administrateur" as AD
+actor "Système IA" as IA <<system>>
+
+rectangle "MatiousHire" {
+  package "Authentification" {
+    usecase "S'inscrire" as UC1
+    usecase "Se connecter" as UC2
+  }
+  package "Profil & CV" {
+    usecase "Gérer profil" as UC3
+    usecase "Uploader CV" as UC4
+    usecase "Consulter CV extrait" as UC5
+  }
+  package "Offres & candidatures" {
+    usecase "Consulter offres" as UC6
+    usecase "Publier offre" as UC7
+    usecase "Postuler" as UC8
+    usecase "Sauvegarder offre" as UC9
+  }
+  package "Matching IA" {
+    usecase "Recommandations IA" as UC10
+    usecase "Calculer score" as UC11
+    usecase "Classer candidats" as UC12
+    usecase "Explication LLM" as UC13
+  }
+  package "Entretiens" {
+    usecase "Planifier entretien" as UC14
+    usecase "Gérer disponibilités" as UC15
+    usecase "Confirmer / Refuser" as UC16
+  }
+  package "Administration" {
+    usecase "Dashboard admin" as UC17
+    usecase "Gérer utilisateurs" as UC18
+    usecase "Audit logs" as UC19
+  }
+}
+
+ET --> UC1
+ET --> UC2
+ET --> UC3
+ET --> UC4
+ET --> UC5
+ET --> UC6
+ET --> UC8
+ET --> UC9
+ET --> UC10
+ET --> UC13
+ET --> UC15
+ET --> UC16
+
+CA --> UC1
+CA --> UC2
+CA --> UC3
+CA --> UC4
+CA --> UC5
+CA --> UC6
+CA --> UC8
+CA --> UC9
+CA --> UC10
+CA --> UC13
+CA --> UC15
+CA --> UC16
+
+RE --> UC2
+RE --> UC7
+RE --> UC12
+RE --> UC14
+RE --> UC16
+
+AD --> UC2
+AD --> UC17
+AD --> UC18
+AD --> UC19
+
+UC4 ..> IA : <<include>>
+UC10 ..> UC11 : <<include>>
+UC10 ..> IA
+UC12 ..> UC11 : <<include>>
+UC12 ..> IA
+UC13 ..> IA
+
+@enduml

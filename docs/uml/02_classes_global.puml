@@ -1,0 +1,156 @@
+@startuml MatiousHire_Classes_Global
+' MatiousHire PFE 2026 - Diagramme de classes GLOBAL (domaine + services)
+' Organise en 2 zones : Persistance PostgreSQL + Logique applicative
+' Syntaxe PlantUML valide - sans markdown ni caracteres speciaux
+
+top to bottom direction
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+title MatiousHire - Diagramme de classes global
+
+note as NMethods
+  Slide jury : 02_classes_resume_presentation.puml
+  Detail methodes : 02_classes_methods.puml
+end note
+
+' ===================== ZONE 1 : DOMAINE =====================
+
+package "1. Domaine metier (PostgreSQL)" #E8F5E9 {
+
+  together {
+    package "Comptes" {
+      abstract class Applicant {
+        - id : UUID
+        - email : String
+        - hashed_password : String
+        - first_name : String
+        - last_name : String
+        - technical_skills : Text
+        - cv_filename : String
+        - cv_path : String
+        - cv_extracted_text : Text
+        - account_kind : String
+      }
+      class Student
+      class Candidate
+      class Recruiter {
+        - company_name : String
+      }
+      class Admin
+      Applicant <|-- Student
+      Applicant <|-- Candidate
+    }
+
+    package "Offres" {
+      class Job {
+        - id : Integer
+        - title : String
+        - description : Text
+        - required_skills : Text
+        - status : String
+      }
+      class Application {
+        - student_id : UUID
+        - job_id : Integer
+        - match_score : Integer
+        - status : String
+      }
+      class SavedJob
+    }
+
+    package "Entretiens" {
+      class Meeting
+      class InterviewSlot
+      class CandidateAvailability
+    }
+
+    package "Tracabilite" {
+      class RecommendationHistory {
+        - compatibility_score : Integer
+        - explanation : Text
+      }
+      class AuditLog
+      class Notification
+    }
+  }
+}
+
+' ===================== ZONE 2 : SERVICES =====================
+
+package "2. Services applicatifs (Python)" #F3E5F5 {
+
+  together {
+    package "Matching IA" {
+      class MatchingService
+      class MatchingPipeline
+      class MatchingScoreService
+      class ScoreFormula
+      class MatchResult {
+        - compatibility_score : Integer
+        - explanation : String
+      }
+    }
+
+    package "CV" {
+      class CvService
+      class CvStorage
+      class CvExtraction
+    }
+
+    package "LLM" {
+      class LlmExplanation
+    }
+
+    package "Platform" {
+      class AuditModule
+      class OfferService
+      class UserService
+    }
+  }
+}
+
+' ===================== RELATIONS DOMAINE =====================
+
+Recruiter "1" -- "0..*" Job
+Applicant "1" -- "0..*" Application
+Job "1" -- "0..*" Application
+Applicant "1" -- "0..*" SavedJob
+Applicant "1" -- "0..*" RecommendationHistory
+Job "1" -- "0..*" RecommendationHistory
+Application "1" -- "0..1" Meeting
+Recruiter "1" -- "0..*" Meeting
+Applicant "1" -- "0..*" Meeting
+
+' ===================== RELATIONS SERVICES =====================
+
+MatchingService ..> MatchingPipeline
+MatchingService ..> Applicant
+MatchingService ..> Job
+MatchingService ..> RecommendationHistory
+MatchingPipeline ..> MatchingScoreService
+MatchingPipeline ..> LlmExplanation
+MatchingScoreService ..> ScoreFormula
+MatchingPipeline ..> MatchResult
+CvService ..> CvStorage
+CvService ..> CvExtraction
+CvService ..> Applicant
+AuditModule ..> AuditLog
+OfferService ..> Job
+UserService ..> Applicant
+
+note bottom of Applicant
+  Implementation : table students
+  Student et Candidate via account_kind
+end note
+
+note as N1
+  Fichiers detailles separes :
+  - 02_classes_domain.puml (entites)
+  - 02_classes_services.puml (services)
+end note
+
+@enduml

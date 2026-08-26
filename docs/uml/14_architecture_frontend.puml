@@ -1,0 +1,97 @@
+@startuml MatiousHire_Architecture_Frontend
+' MatiousHire PFE 2026 — Architecture frontend Next.js
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+title MatiousHire — Architecture frontend (Next.js 15)
+
+package "Routes App Router" #E3F2FD {
+  together {
+    package "Public" {
+      [/] as R_HOME
+      [/login] as R_LOGIN
+    }
+    package "Étudiant /student" {
+      [/student/dashboard] as R_ST_D
+      [/student/jobs] as R_ST_J
+      [/student/profile] as R_ST_P
+      [/student/interviews] as R_ST_I
+    }
+    package "Candidat /candidate" {
+      [/candidate/dashboard] as R_CA_D
+      [/candidate/jobs] as R_CA_J
+      [/candidate/profile] as R_CA_P
+      [/candidate/interviews] as R_CA_I
+    }
+    package "Recruteur /recruiter" {
+      [/recruiter/dashboard] as R_RE_D
+      [/recruiter/jobs] as R_RE_J
+      [/recruiter/pipeline] as R_RE_P
+      [/recruiter/meetings] as R_RE_M
+    }
+    package "Admin /admin" {
+      [/admin/dashboard] as R_AD_D
+      [/admin/users] as R_AD_U
+      [/admin/audit-logs] as R_AD_A
+    }
+  }
+}
+
+package "Composants partagés" #BBDEFB {
+  [AuthExperience] as C_AUTH
+  [RequireAuth] as C_GUARD
+  [ApplicantJobsPanel\n+ reco IA] as C_JOBS
+  [ProfilePanel\n+ upload CV] as C_PROFILE
+  [LlmExplanationPanel] as C_LLM
+  [MatchScoreBreakdown\n6 critères] as C_BREAK
+}
+
+package "Providers & lib" #90CAF9 {
+  [AuthProvider\nJWT token] as P_AUTH
+  [NoticeProvider] as P_NOT
+  [lib/api.ts\nFetch + auth headers] as L_API
+  [lib/applicant.ts\nmatchingApiBase] as L_APP
+}
+
+package "Backend API" #C8E6C9 {
+  [/auth/*] as API_AUTH
+  [/matching/*] as API_MATCH
+  [/llm/*] as API_LLM
+  [/jobs/*] as API_JOBS
+  [/students|/candidates/*] as API_USER
+  [/recruiters/*] as API_RE
+  [/admin/*] as API_ADMIN
+}
+
+R_LOGIN --> C_AUTH
+R_ST_J --> C_JOBS
+R_CA_J --> C_JOBS
+R_ST_P --> C_PROFILE
+R_CA_P --> C_PROFILE
+R_RE_P --> C_BREAK
+R_RE_P --> C_LLM
+R_AD_A --> L_API
+
+C_GUARD --> P_AUTH
+C_JOBS --> L_API
+C_JOBS --> C_LLM
+C_JOBS --> C_BREAK
+C_PROFILE --> L_API
+L_API --> L_APP
+
+L_API --> API_AUTH : login
+L_API --> API_MATCH : recommendations\nscore · ranking
+L_API --> API_LLM : explain-job
+L_API --> API_JOBS : list · apply
+L_API --> API_USER : profile · CV
+L_API --> API_RE : pipeline actions
+L_API --> API_ADMIN : audit logs
+
+note bottom of C_JOBS
+  GET /matching/students|/candidates
+      /me/recommendations?limit=5
+end note
+
+@enduml

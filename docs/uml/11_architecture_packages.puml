@@ -1,0 +1,131 @@
+@startuml MatiousHire_Architecture_Packages
+' MatiousHire PFE 2026 — Diagramme de packages backend
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+title MatiousHire — Architecture packages (backend FastAPI)
+
+package "Project/frontend" {
+  package "app/" {
+    [student/] as P_ST
+    [candidate/] as P_CA
+    [recruiter/] as P_RE
+    [admin/] as P_AD
+    [login/] as P_LOGIN
+  }
+  package "components/" {
+    [ApplicantJobsPanel] as C_JOBS
+    [ProfilePanel] as C_PROF
+    [LlmExplanationPanel] as C_LLM
+    [MatchScoreBreakdown] as C_SCORE
+  }
+  package "lib/" {
+    [api.ts] as LIB_API
+    [applicant.ts] as LIB_APP
+  }
+}
+
+package "Project/backend/app" {
+  package "routers/" <<Rectangle>> {
+    [auth.py] as R_AUTH
+    [students.py] as R_ST
+    [candidate.py] as R_CA
+    [recruiters.py] as R_RE
+    [jobs.py] as R_JOBS
+    [matching.py] as R_MATCH
+    [llm.py] as R_LLM
+    [meetings.py] as R_MEET
+    [admin.py] as R_ADMIN
+    [cv_routes.py] as R_CV
+  }
+
+  package "modules/" {
+    package "matching/" #F3E5F5 {
+      [pipeline.py] as M_PIPE
+      [scorer.py] as M_SCORER
+      [score_formula.py] as M_FORM
+      [matching_score_service.py] as M_SVC
+      [service.py] as M_MATCH_SVC
+      [nlp.py] as M_NLP
+      [embeddings.py] as M_EMB
+    }
+    package "llm/" #F3E5F5 {
+      [explanation.py] as M_EXPL
+      [service.py] as M_LLM_SVC
+    }
+    package "cv/" #FFF3E0 {
+      [service.py] as M_CV_SVC
+      [storage.py] as M_STORAGE
+      [extraction.py] as M_EXTRACT
+      [skills.py] as M_SKILLS
+    }
+    package "offers/" #FFF3E0 {
+      [service.py] as M_OFFERS
+    }
+    package "users/" #FFF3E0 {
+      [service.py] as M_USERS
+    }
+    package "platform/" #FFF3E0 {
+      [audit.py] as M_AUDIT
+      [service.py] as M_PLATFORM
+      [data_layer.py] as M_DATA
+    }
+  }
+
+  package "models/" {
+    [recruitment.py\nStudent, Job, Application] as MOD_REC
+    [platform.py\nAuditLog, Meeting, History] as MOD_PLAT
+  }
+
+  package "core/" {
+    [main.py] as MAIN
+    [auth.py] as AUTH
+    [database.py] as DB
+    [error_handlers.py] as ERR
+    [exceptions.py] as EXC
+  }
+}
+
+package "tests/" {
+  [pytest\n39 tests] as TESTS
+}
+
+P_ST --> LIB_API
+P_CA --> LIB_API
+P_RE --> LIB_API
+LIB_API --> R_AUTH
+LIB_API --> R_MATCH
+LIB_API --> R_LLM
+
+MAIN --> R_AUTH
+MAIN --> R_MATCH
+MAIN --> R_LLM
+MAIN --> ERR
+
+R_MATCH --> M_MATCH_SVC
+R_MATCH --> M_PIPE
+M_MATCH_SVC --> M_PIPE
+M_PIPE --> M_SCORER
+M_SCORER --> M_SVC
+M_SVC --> M_FORM
+M_FORM --> M_NLP
+M_PIPE --> M_EXPL
+
+R_CV --> M_CV_SVC
+M_CV_SVC --> M_STORAGE
+M_CV_SVC --> M_EXTRACT
+M_CV_SVC --> M_SKILLS
+
+R_JOBS --> M_OFFERS
+R_ADMIN --> M_AUDIT
+M_MATCH_SVC --> MOD_REC
+M_AUDIT --> MOD_PLAT
+MOD_REC --> DB
+MOD_PLAT --> DB
+
+TESTS ..> M_FORM : unit tests
+TESTS ..> R_MATCH : API tests
+
+@enduml
